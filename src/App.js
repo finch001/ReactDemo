@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import logo from './logo.svg';
 import './App.css';
+import {Icon} from 'antd';
 
 const DEFAULT_QUERY = 'redux';
 const DEFAULT_PAGE = 0;
@@ -27,17 +28,52 @@ const smallColum = {
 
 //const isSearched = (searchTerm) => (item) => !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase());
 
-const Search = ({value, onChange, onSubmit, children}) =>
-	<form onSubmit={onSubmit}>
-		<input
-			type="text"
-			value={value}
-			onChange={onChange}
-		/>
-		<button type="submit">
-			{children}
-		</button>
-	</form>
+// const Search = ({value, onChange, onSubmit, children}) =>
+// 	<form onSubmit={onSubmit}>
+// 		<input
+// 			type="text"
+// 			value={value}
+// 			onChange={onChange}
+// 		/>
+// 		<button type="submit">
+// 			{children}
+// 		</button>
+// 	</form>
+
+
+class Search extends Component {
+	render() {
+		const {
+			value,
+			onChange,
+			onSubmit,
+			children
+		} = this.props;
+
+		return (
+			<form onSubmit={onSubmit}>
+				<input
+					type="text"
+					value={value}
+					onChange={onChange}
+					ref={(node => {
+						this.input = node;
+					})}
+				/>
+				<button type="submit">
+					{children}
+				</button>
+			</form>
+		);
+	}
+
+	componentDidMount() {
+		this.input.focus();
+	}
+}
+
+const Loading = () =>
+	<Icon type="reload"/>
 
 const Table = ({list, onDismiss}) =>
 	<div className="table">
@@ -69,6 +105,7 @@ class App extends Component {
 			results: null,
 			searchKey: '',
 			searchTerm: DEFAULT_QUERY,
+			isLoading: false,
 		};
 
 		this.onDismiss = this.onDismiss.bind(this);
@@ -102,7 +139,8 @@ class App extends Component {
 			results: {
 				...results,
 				[searchKey]: {hits: updateHits, page}
-			}
+			},
+			isLoading: false
 		});
 	}
 
@@ -113,6 +151,9 @@ class App extends Component {
 	// 网络请求获取数据
 	fetchSearchTopstories(searchTerm, page) {
 		// 动态构建URL 请求服务器
+		this.setState({
+			isLoading: true
+		});
 		const requestUrl = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`;
 		console.log(requestUrl);
 		fetch(requestUrl)
@@ -141,7 +182,12 @@ class App extends Component {
 
 	render() {
 		// ES6 语法  解构对象 必须使用相同的属性名  数组对应的解析则是对应的数字
-		const {searchTerm, results, searchKey} = this.state;
+		const {
+			searchTerm,
+			results,
+			searchKey,
+			isLoading
+		} = this.state;
 		const page = (results && results[searchKey] && results[searchKey].page) || 0;
 		const list = (results && results[searchKey] && results[searchKey].hits) || [];
 		return (
@@ -168,9 +214,12 @@ class App extends Component {
 					/>
 				}
 				<div className="interactions">
-					<button onClick={() => this.fetchSearchTopstories(searchTerm, page + 1)}>
-						More
-					</button>
+					{ isLoading
+						? <Loading/>
+						: <button onClick={() => this.fetchSearchTopstories(searchTerm, page + 1)}>
+							More
+						</button>
+					}
 				</div>
 			</div>
 		);
@@ -182,5 +231,10 @@ class App extends Component {
 		this.fetchSearchTopstories(searchTerm, DEFAULT_PAGE);
 	}
 }
+
+export {
+	Search,
+	Table,
+};
 
 export default App;
